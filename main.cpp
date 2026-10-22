@@ -38,7 +38,7 @@ inline void do_not_optimize(T const& value) {
 // -------------------------------------------------------------
 // System Information Detection
 // -------------------------------------------------------------
-std::string get_cpu_brand() {
+static std::string get_cpu_brand() {
 #if defined(__APPLE__)
     char buffer[256];
     size_t size = sizeof(buffer);
@@ -55,7 +55,7 @@ std::string get_cpu_brand() {
 #endif
 }
 
-std::string get_architecture() {
+static std::string get_architecture() {
 #if defined(__aarch64__) || defined(_M_ARM64)
     return "ARM64";
 #elif defined(__x86_64__) || defined(_M_X64)
@@ -185,14 +185,14 @@ struct MemoryBandwidthResult {
 MemoryBandwidthResult benchmark_memory_bandwidth(double target_seconds = 2.0) {
     using clock = std::chrono::steady_clock;
     // 256 MB total working set (exceeds CPU L3/SLC cache)
-    const size_t array_elements = (256 * 1024 * 1024) / (sizeof(double) * 3);
-    std::vector<double> a(array_elements, 1.0);
-    std::vector<double> b(array_elements, 2.0);
+    constexpr size_t array_elements = (256 * 1024 * 1024) / (sizeof(double) * 3);
+    const std::vector<double> a(array_elements, 1.0);
+    const std::vector<double> b(array_elements, 2.0);
     std::vector<double> c(array_elements, 0.0);
 
     const double scalar = 3.141592653589793;
     uint64_t passes = 0;
-    auto start_time = clock::now();
+    const auto start_time = clock::now();
     auto end_time = start_time;
 
     while (true) {
@@ -208,8 +208,8 @@ MemoryBandwidthResult benchmark_memory_bandwidth(double target_seconds = 2.0) {
 
     std::chrono::duration<double> elapsed = end_time - start_time;
     // STREAM Triad transfers 3 arrays: 2 reads (a, b) and 1 write (c) = 3 * sizeof(double)
-    double total_bytes = static_cast<double>(passes) * array_elements * sizeof(double) * 3.0;
-    double gb_per_sec = (total_bytes / elapsed.count()) / (1024.0 * 1024.0 * 1024.0);
+    const double total_bytes = static_cast<double>(passes) * array_elements * sizeof(double) * 3.0;
+    const double gb_per_sec = (total_bytes / elapsed.count()) / (1024.0 * 1024.0 * 1024.0);
     double score = gb_per_sec * 25.0;
     return {gb_per_sec, score};
 }
@@ -225,9 +225,9 @@ struct MemoryLatencyResult {
 MemoryLatencyResult benchmark_memory_latency(double target_seconds = 2.0) {
     using clock = std::chrono::steady_clock;
     // 128 MB buffer of cache lines (64 bytes each)
-    const size_t line_size = 64;
-    const size_t buffer_bytes = 128 * 1024 * 1024;
-    const size_t num_lines = buffer_bytes / line_size;
+    constexpr size_t line_size = 64;
+    constexpr size_t buffer_bytes = 128 * 1024 * 1024;
+    constexpr size_t num_lines = buffer_bytes / line_size;
 
     struct alignas(64) Node {
         uint32_t next;
@@ -269,8 +269,8 @@ MemoryLatencyResult benchmark_memory_latency(double target_seconds = 2.0) {
     do_not_optimize(current);
 
     std::chrono::duration<double> elapsed = end_time - start_time;
-    double latency_ns = (elapsed.count() * 1e9) / static_cast<double>(total_hops);
-    double score = (latency_ns > 0.0) ? (100000.0 / latency_ns) : 0.0;
+    const double latency_ns = (elapsed.count() * 1e9) / static_cast<double>(total_hops);
+    const double score = (latency_ns > 0.0) ? (100000.0 / latency_ns) : 0.0;
     return {latency_ns, score};
 }
 
