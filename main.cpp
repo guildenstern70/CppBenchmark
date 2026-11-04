@@ -26,7 +26,7 @@
 
 // Compiler barrier to prevent dead code elimination
 template <typename T>
-inline void do_not_optimize(T const& value) {
+static inline void do_not_optimize(T const& value) {
 #if defined(__GNUC__) || defined(__clang__)
     asm volatile("" : : "g"(value) : "memory");
 #else
@@ -43,7 +43,7 @@ static std::string get_cpu_brand() {
     char buffer[256];
     size_t size = sizeof(buffer);
     if (sysctlbyname("machdep.cpu.brand_string", &buffer, &size, nullptr, 0) == 0) {
-        return std::string(buffer);
+        return {buffer};
     }
 #endif
 #if defined(__aarch64__) || defined(_M_ARM64)
@@ -85,7 +85,7 @@ AluResult benchmark_alu(double target_seconds = 2.0) {
     const uint64_t ops_per_step = 32;
 
     uint64_t total_operations = 0;
-    auto start_time = clock::now();
+    const auto start_time = clock::now();
     auto end_time = start_time;
 
     while (true) {
@@ -138,7 +138,7 @@ CacheResult benchmark_cache(double target_seconds = 2.0) {
 
     uint64_t passes = 0;
     uint64_t accumulator = 0;
-    auto start_time = clock::now();
+    const auto start_time = clock::now();
     auto end_time = start_time;
 
     while (true) {
@@ -168,9 +168,9 @@ CacheResult benchmark_cache(double target_seconds = 2.0) {
 
     std::chrono::duration<double> elapsed = end_time - start_time;
     // Each element is read and written (2 memory operations * 8 bytes = 16 bytes per element)
-    double total_bytes = static_cast<double>(passes) * element_count * sizeof(uint64_t) * 2.0;
-    double gb_per_sec = (total_bytes / elapsed.count()) / (1024.0 * 1024.0 * 1024.0);
-    double score = gb_per_sec * 15.0;
+    const double total_bytes = static_cast<double>(passes) * element_count * sizeof(uint64_t) * 2.0;
+    const double gb_per_sec = (total_bytes / elapsed.count()) / (1024.0 * 1024.0 * 1024.0);
+    const double score = gb_per_sec * 15.0;
     return {gb_per_sec, score};
 }
 
@@ -252,11 +252,11 @@ MemoryLatencyResult benchmark_memory_latency(double target_seconds = 2.0) {
 
     uint32_t current = 0;
     uint64_t total_hops = 0;
-    const uint64_t hop_batch = 200000;
-    auto start_time = clock::now();
+    const auto start_time = clock::now();
     auto end_time = start_time;
 
     while (true) {
+        const uint64_t hop_batch = 200000;
         for (uint64_t i = 0; i < hop_batch; ++i) {
             current = nodes[current].next;
         }
